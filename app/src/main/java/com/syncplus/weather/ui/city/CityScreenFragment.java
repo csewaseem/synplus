@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.syncplus.weather.R;
 import com.syncplus.weather.databinding.FragmentCityBinding;
@@ -19,12 +21,13 @@ import java.util.ArrayList;
 public class CityScreenFragment extends Fragment {
 
     private FragmentCityBinding binding;
-
+    private NavController navController;
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCityBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        navController = NavHostFragment.findNavController(this);
 
         CityWeather weatherArgs = CityScreenFragmentArgs.fromBundle(getArguments()).getWeatherArg();
         if (weatherArgs != null) {
@@ -54,6 +57,11 @@ public class CityScreenFragment extends Fragment {
             binding.weatherDescriptionText.setText(weather.get(0).description);
 
         }
+
+        binding.helpIcon.setOnClickListener(v -> {
+            navController.navigate(R.id.action_nav_city_screen_to_nav_help_screen);
+        });
+
         return root;
     }
 

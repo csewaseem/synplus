@@ -26,8 +26,15 @@
         <argument
             android:name="weatherArg"
             app:argType="com.syncplus.weather.model.CityWeather" />
+        <action
+            android:id="@+id/action_nav_city_screen_to_nav_help_screen"
+            app:destination="@id/nav_help_screen" />
     </fragment>
-
+    <fragment
+        android:id="@+id/nav_help_screen"
+        android:label="@string/help"
+        android:name="com.syncplus.weather.ui.city.HelpScreenFragment"
+        tools:layout="@layout/fragment_help" />
     <fragment
         android:id="@+id/nav_settings"
         android:label="@string/action_settings"
