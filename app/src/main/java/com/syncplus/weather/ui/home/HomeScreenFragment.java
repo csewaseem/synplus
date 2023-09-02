@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -25,6 +27,7 @@ import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListAdapter;
@@ -41,6 +44,7 @@ import com.syncplus.weather.viewModel.ViewModelFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -54,8 +58,7 @@ public class HomeScreenFragment extends Fragment {
 
 private FragmentHomeBinding binding;
     // Storing a string
-    private String key = "location";
-    private ArrayList<String> locationList = new ArrayList<>();
+    private String keyPrefix = "location_";
     private SharedPreferences sharedPreferences;
     @Inject
     ViewModelFactory viewModelFactory;
@@ -63,9 +66,9 @@ private FragmentHomeBinding binding;
     private NavController navController;
     private RecyclerView recyclerView;
     private ItemAdapter itemAdapter;
-    private EditText mEtCityName;
     private Button mBtnAdd;
-    private String mCity;
+
+    private static SharedPreferences.Editor editor;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,7 +78,7 @@ private FragmentHomeBinding binding;
         homeScreenViewModel = new ViewModelProvider(this, viewModelFactory).get(HomeScreenViewModel.class);
 
         sharedPreferences = this.requireActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-
+        editor = sharedPreferences.edit();
         homeScreenViewModel.getWeather().observe(this.requireActivity(), new Observer<CityWeather>() {
             @Override
             public void onChanged(CityWeather cityWeather) {
@@ -83,11 +86,6 @@ private FragmentHomeBinding binding;
 
                 NavDirections action = HomeScreenFragmentDirections.actionNavHomeScreenToNavCityScreen(cityWeather);
                 navController.navigate(action);
-
-                //Toast.makeText(getContext(), "Selected item: " + cityWeather.name, Toast.LENGTH_SHORT).show();
-                // Handle the updated CityWeather object here
-                // This block will be called whenever the LiveData value changes
-                // You can update your UI or perform any other action based on the new data
             }
         });
 
@@ -99,44 +97,38 @@ private FragmentHomeBinding binding;
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-//        homeScreenViewModel = new ViewModelProvider(this, viewModelFactory).get(HomeScreenViewModel.class);
         recyclerView = binding.recyclerViewCity;
         mBtnAdd = binding.addButton;
-        mEtCityName = binding.editText;
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         itemAdapter = new ItemAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(this.getContext()));
         recyclerView.setAdapter(itemAdapter);
 
-//        AppBarConfiguration mAppBarConfiguration =
-//                new AppBarConfiguration.Builder(navController.getGraph()).build();
-//        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
+        if(!getLocation().isEmpty()){
+            for(String  location : getLocation()){
+                itemAdapter.addItem(location);
+            }
+        }
 
         mBtnAdd.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 String cityName = binding.editText.getText().toString().trim();
                 if (!cityName.isEmpty()) {
+                    saveLocation(cityName);
                     itemAdapter.addItem(cityName);
-                    locationList.add(cityName);
-
                     binding.editText.setText("");
                 }
             }
         });
 
-        // Observe LiveData
-
         itemAdapter.setOnItemClickListener(new ItemAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String item) {
                 homeScreenViewModel.fetchCityWeather(item);
-                // Handle the click event, e.g., display a toast or start an activity
-//                Toast.makeText(getContext(), "Selected item: " + item, Toast.LENGTH_SHORT).show();
-
             }
         });
-
 
         return root;
     }
@@ -168,9 +160,8 @@ private FragmentHomeBinding binding;
         @NonNull
         @Override
         public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//            ItemHomeBinding binding = ItemHomeBinding.inflate(LayoutInflater.from(parent.getContext()));
             View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_home, parent, false);
-            return new ItemViewHolder(itemView);
+            return new ItemViewHolder(itemView).linkAdapter(this);
         }
 
         @Override
@@ -193,11 +184,27 @@ private FragmentHomeBinding binding;
         }
 
         public class ItemViewHolder extends RecyclerView.ViewHolder {
+
+            private ItemAdapter itemAdapter;
             TextView itemTextView;
+            Button btnDelete;
+
 
             public ItemViewHolder(@NonNull View itemView) {
                 super(itemView);
-                itemTextView = itemView.findViewById(R.id.text_view_item_transform);
+                itemTextView = itemView.findViewById(R.id.text_view_item_location);
+                btnDelete = itemView.findViewById(R.id.delete);
+                btnDelete.setOnClickListener(v -> {
+                    itemAdapter.itemList.remove(getAbsoluteAdapterPosition());
+                    itemAdapter.notifyItemRemoved(getAbsoluteAdapterPosition());
+
+                    remove(itemTextView.getText().toString().toUpperCase());
+                    System.out.println(itemTextView.getText().toString().toUpperCase());
+                });
+            }
+            public ItemViewHolder linkAdapter(ItemAdapter itemAdapter){
+                this.itemAdapter = itemAdapter;
+                return this;
             }
 
             public void bind(String item) {
@@ -206,20 +213,57 @@ private FragmentHomeBinding binding;
         }
     }
 
-    private void saveLocation(ArrayList location){
-        // Convert the ArrayList to a single String with delimiter
-        String delimitedString = TextUtils.join(",", location);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(key, delimitedString);
-        editor.apply();
+    private void saveLocation(String location){
+//        int count = sharedPreferences.getInt("string_count", 0); // Get the current count
+//        String key = keyPrefix + (count + 1); // Create a unique key
+//        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(location.toUpperCase(), location);
+//        editor.putInt("string_count", count + 1); // Update the count
+        editor.apply(); // Save changes
     }
 
     private ArrayList<String> getLocation(){
-        // Get the delimited String from SharedPreferences
-        String delimitedString = sharedPreferences.getString("stringArrayList", "");
-        // Convert the delimited String back to a String ArrayList
-        ArrayList<String> retrievedList = new ArrayList<>(Arrays.asList(delimitedString.split(",")));
+
+        Map<String, ?> allKeyValues = sharedPreferences.getAll();
+        ArrayList<String> retrievedList = new ArrayList<>();
+
+        for (Map.Entry<String, ?> entry : allKeyValues.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            if (value instanceof String) {
+                String stringValue = (String) value;
+                retrievedList.add(stringValue);
+
+                // Handle string value
+                Log.d("SharedPreferences", key + " : " + stringValue);
+            } /*else if (value instanceof Integer) {
+                int intValue = (Integer) value;
+                // Handle integer value
+                Log.d("SharedPreferences", key + " : " + intValue);
+            } else if (value instanceof Boolean) {
+                boolean booleanValue = (Boolean) value;
+                // Handle boolean value
+                Log.d("SharedPreferences", key + " : " + booleanValue);
+            }*/
+            // Add more else if clauses for other data types if needed
+        }
+        /*ArrayList<String> retrievedList = new ArrayList<>();
+        int totalCount = sharedPreferences.getInt("string_count", 0);
+
+        for (int i=1; i<= totalCount; i++){
+            String key = keyPrefix + i;
+            retrievedList.add(sharedPreferences.getString(key, ""));
+        }*/
+
         return retrievedList;
     }
 
+    private static void remove(String item){
+//        boolean itemExists = sharedPreferences.contains(item);
+//        if(itemExists) {
+            editor.remove(item);
+            editor.apply();
+//        }
+    }
 }

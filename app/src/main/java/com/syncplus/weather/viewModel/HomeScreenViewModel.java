@@ -18,83 +18,62 @@ import io.reactivex.schedulers.Schedulers;
 
 public class HomeScreenViewModel extends ViewModel {
 
-//    CityWeatherService cityWeatherService;
-   private CityWeatherRepository cityWeatherRepository;
+    private CityWeatherRepository cityWeatherRepository;
 
-        private final CompositeDisposable disposables = new CompositeDisposable();
+    private final CompositeDisposable disposables = new CompositeDisposable();
 
-        private final MutableLiveData<CityWeather> data = new MutableLiveData<>();
-        private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
-    private final MutableLiveData<ArrayList<String>> location = new MutableLiveData<>();
+    private final MutableLiveData<CityWeather> data = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
 
-    public MutableLiveData<ArrayList<String>> getLocation() {
-        return location;
-    }
+    private ArrayList<String> locationList = new ArrayList<>();
+
     @Inject
     public HomeScreenViewModel(CityWeatherRepository cityWeatherRepository) {
         this.cityWeatherRepository = cityWeatherRepository;
     }
 
-    /*@Inject
-        public HomeScreenViewModel(MutableLiveData<List<String>> mTexts, CityWeatherRepository cityWeatherRepository) {
-            this.mTexts = mTexts;
-            this.cityWeatherRepository = cityWeatherRepository;
-        }*/
-//        @Inject
-        /*public HomeScreenViewModel(CityWeatherRepository cityWeatherRepository) {
-            mTexts = new MutableLiveData<>();
-            this.cityWeatherRepository = cityWeatherRepository;
-        }*/
-        public LiveData<CityWeather> getWeather() {
-            return data;
-        }
+    public void addLocation(String value) {
+        locationList.add(value);
+    }
 
-        public LiveData<Boolean> isLoading() {
-            return loading;
-        }
+    public ArrayList<String> getLocation() {
+        return locationList;
+    }
 
-        public void fetchCityWeather(String cityName) {
-            loading.setValue(true);
-            disposables.add(cityWeatherRepository.getCityWeather(cityName)
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .doOnSubscribe(disposable -> {
-                        // This is called when the subscription is made
-                        // You can show loading indicators here
-                                System.out.println("disposable: " + disposable);
+    public LiveData<CityWeather> getWeather() {
+        return data;
+    }
 
-                            })
-//                            .Next(response -> {
-//                                // This is called when a successful response is received
-//                                // You can access the response data here
-//                                Log.d( "Response received: " + response.toString());
-//                            })
-                            .doOnError(error -> {
-                                // This is called when an error occurs
-                                // You can handle the error here
-                                System.out.println("Error: " + error.getMessage());
-                            })
-                            .subscribe(
-                                    response -> {
-                                        System.out.println("subscribe: " + response);
-                                        data.setValue(response);
-                                        loading.setValue(false);
-                                    },
-                                    throwable -> {
-                                        System.out.println("throwable: " + throwable);
+    public LiveData<Boolean> isLoading() {
+        return loading;
+    }
 
-                                        // Handle error
-                                        loading.setValue(false);
-                                    }
-                            )
-            );
-        }
+    public void fetchCityWeather(String cityName) {
+        loading.setValue(true);
+        disposables.add(cityWeatherRepository.getCityWeather(cityName)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        response -> {
+                            System.out.println("subscribe: " + response);
+                            data.setValue(response);
+                            loading.setValue(false);
+                        },
+                        throwable -> {
+                            System.out.println("throwable: " + throwable);
 
-        @Override
-        protected void onCleared() {
-            super.onCleared();
-            disposables.clear();
-        }
+                            // Handle error
+                            loading.setValue(false);
+                        }
+                )
+        );
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        disposables.clear();
+    }
 
 
 }
