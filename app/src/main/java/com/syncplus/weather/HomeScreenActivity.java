@@ -5,7 +5,6 @@ import android.view.MenuItem;
 import android.view.Menu;
 
 import com.syncplus.weather.databinding.ActivityMainBinding;
-import com.syncplus.weather.viewModel.HomeScreenViewModel;
 
 import androidx.annotation.NonNull;
 import androidx.navigation.NavController;
@@ -20,7 +19,7 @@ public class HomeScreenActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private NavController navController;
-    HomeScreenViewModel homeScreenViewModel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,10 +28,6 @@ public class HomeScreenActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.appBarMain.toolbar);
-//        if (binding.appBarMain != null) {
-//            binding.appBarMain.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                    .setAction("Action", null).show());
-//        }
 
         // Find the NavController by locating the NavHostFragment
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
@@ -48,14 +43,7 @@ public class HomeScreenActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         boolean result = super.onCreateOptionsMenu(menu);
-        // Using findViewById because NavigationView exists in different layout files
-        // between w600dp and w1240dp
-//        NavigationView navView = findViewById(R.id.nav_view);
-//        if (navView == null) {
-            // The navigation drawer already has the items including the items in the overflow menu
-            // We only inflate the overflow menu if the navigation drawer isn't visible
-            getMenuInflater().inflate(R.menu.overflow, menu);
-//        }
+        getMenuInflater().inflate(R.menu.overflow, menu);
         return result;
     }
 
@@ -74,5 +62,4 @@ public class HomeScreenActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, mAppBarConfiguration)
                 || super.onSupportNavigateUp();
     }
-
 }

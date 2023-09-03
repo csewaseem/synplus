@@ -7,37 +7,22 @@ import androidx.lifecycle.ViewModel;
 import com.syncplus.weather.model.CityWeather;
 import com.syncplus.weather.repository.CityWeatherRepository;
 
-import java.util.ArrayList;
-
 import javax.inject.Inject;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 
-
 public class HomeScreenViewModel extends ViewModel {
 
     private CityWeatherRepository cityWeatherRepository;
-
     private final CompositeDisposable disposables = new CompositeDisposable();
-
     private final MutableLiveData<CityWeather> data = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
-
-    private ArrayList<String> locationList = new ArrayList<>();
 
     @Inject
     public HomeScreenViewModel(CityWeatherRepository cityWeatherRepository) {
         this.cityWeatherRepository = cityWeatherRepository;
-    }
-
-    public void addLocation(String value) {
-        locationList.add(value);
-    }
-
-    public ArrayList<String> getLocation() {
-        return locationList;
     }
 
     public LiveData<CityWeather> getWeather() {
@@ -55,13 +40,12 @@ public class HomeScreenViewModel extends ViewModel {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         response -> {
-                            System.out.println("subscribe: " + response);
-                            data.setValue(response);
+                            if (response != null) {
+                                data.setValue(response);
+                            }
                             loading.setValue(false);
                         },
                         throwable -> {
-                            System.out.println("throwable: " + throwable);
-
                             // Handle error
                             loading.setValue(false);
                         }
@@ -74,6 +58,4 @@ public class HomeScreenViewModel extends ViewModel {
         super.onCleared();
         disposables.clear();
     }
-
-
 }

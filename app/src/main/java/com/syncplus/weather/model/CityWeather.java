@@ -31,7 +31,20 @@ public class CityWeather implements Parcelable {
     @SerializedName("cod")
     public int cod;
 
-    protected CityWeather(Parcel in) {
+    public CityWeather(ArrayList<Weather> weather, String base, Main main, int visibility, Wind wind, int dt, int timezone, int id, String name, int cod) {
+        this.weather = weather;
+        this.base = base;
+        this.main = main;
+        this.visibility = visibility;
+        this.wind = wind;
+        this.dt = dt;
+        this.timezone = timezone;
+        this.id = id;
+        this.name = name;
+        this.cod = cod;
+    }
+
+    public CityWeather(Parcel in) {
         base = in.readString();
         visibility = in.readInt();
         dt = in.readInt();

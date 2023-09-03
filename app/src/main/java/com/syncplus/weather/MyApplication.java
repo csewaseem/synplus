@@ -4,7 +4,6 @@ import android.app.Application;
 
 import com.syncplus.weather.di.component.ApplicationComponent;
 import com.syncplus.weather.di.component.DaggerApplicationComponent;
-import com.syncplus.weather.di.module.NetworkModule;
 
 public class MyApplication extends Application {
 
@@ -20,5 +19,4 @@ public class MyApplication extends Application {
     public ApplicationComponent getApplicationComponent() {
         return applicationComponent;
     }
-//    ApplicationComponent applicationComponent = DaggerApplicationComponent.create();
 }
